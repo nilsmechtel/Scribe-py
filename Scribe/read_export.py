@@ -75,7 +75,7 @@ def load_anndata(anndata, is_scale=False):
                 cur_expression_mat_=pd.DataFrame(cur_expression_mat.values.tolist(),index=index_col) # , columns=cur_obs_name
                 expression_mat_=pd.concat([expression_mat_,cur_expression_mat_],axis=0)
     else:
-        expression_mat_ = expression_raw
+        expression_mat_ = pd.DataFrame(np.transpose(anndata.X), index=anndata.var_names, columns=anndata.obs_names)
 
     model.X = pd.DataFrame(np.transpose(anndata.X), index=anndata.var_names, columns=anndata.obs_names)
     model.expression_raw = expression_mat_

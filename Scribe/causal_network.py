@@ -243,13 +243,19 @@ class causal_model(object):
                     for i in range(L):
                         id3 = top_incoming_nodes_tmp[i]
                         delay_id3 = top_incoming_delays_tmp[i]
-                        yz = np.concatenate( ( self.expression.loc[id3].dropna()[tau - delay_id3:tau - delay_id3 + total_length].values.reshape(-1,1), yz), axis=0)
+                        yz = np.concatenate( ( self.expression.loc[id3].dropna()[tau - delay_id3:tau - delay_id3 + total_length].values.reshape(-1,1), yz), axis=1)     # axis=0
                     if differential_mode == False:
                         y = [[i] for i in self.expression.loc[id2].dropna()][tau:tau + total_length]
                     elif differential_mode == True:
                         y = [[self.expression.loc[id2].dropna()[j-1]-self.expression.loc[id2].dropna()[j]] for j in range(1,len(self.expression.loc[id2].dropna()))][tau-1:tau + total_length]
 
                     if number_of_processes == 1:
+                        # print(x)
+                        # print(len(x))
+                        # print(y)
+                        # print(len(y))
+                        # print(yz)
+                        # print(len(yz))
                         self.crdi_results.loc[id1, id2] = (__individual_cmi(id1, id2, x, y, yz, uniformization, differential_mode))[2]
                     else:
                         temp_input.append((id1, id2, x, y, yz, uniformization, differential_mode))
