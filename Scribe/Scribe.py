@@ -3,8 +3,9 @@ import numpy as np
 from scipy.sparse import isspmatrix
 
 from .causal_network import cmi
+from multiprocessing import Pool
 
-def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False):
+def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1):
     """Infer causal networks with dynamics-coupled single cells measurements.
     Network inference is a insanely challenging problem which has a long history and that none of the existing algorithms work well.
     However, it's quite possible that one or more of the algorithms could work if only they were given enough data. Single-cell
@@ -73,6 +74,11 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
 
     causal_net = pd.DataFrame({node_id: [np.nan for i in genes] for node_id in genes}, index=genes)
 
+    def pool_cmi(gene_a, gene_b, x, y, z):
+        return (gene_a, gene_b, cmi(x, y, z))
+
+    temp_input = []
+
     for g_a in genes:
         for g_b in genes:
             if g_a == g_b:
@@ -86,7 +92,18 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
                 x_orig = [[i] for i in x_orig]
                 y_orig = [[i] for i in y_orig]
                 z_orig = [[i] for i in z_orig]
-                causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
+
+                if number_of_processes == 1:
+                    causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
+                else:
+                    temp_input.append((g_a, g_b, x_orig, y_orig, z_orig))
+
+    if number_of_processes > 1:
+        tmp_results = Pool(number_of_processes).map_async(pool_cmi, temp_input)
+        for t in tmp_results:
+            causal.net.loc[t[0], t[1]] = t[2]
+        pool.close()
+        pool.join()
 
     adata.uns['causal_net'] = causal_net
 
