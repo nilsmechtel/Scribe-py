@@ -74,10 +74,15 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
 
     causal_net = pd.DataFrame({node_id: [np.nan for i in genes] for node_id in genes}, index=genes)
 
-    def pool_cmi(gene_a, gene_b, x, y, z):
+    def pool_cmi(pos):
+        gene_a = tmp_input[pos][0]
+        gene_b = tmp_input[pos][1]
+        x = tmp_input[pos][2]
+        y = tmp_input[pos][3]
+        z = tmp_input[pos][4]
         return (gene_a, gene_b, cmi(x, y, z))
 
-    temp_input = []
+    tmp_input = []
 
     for g_a in genes:
         for g_b in genes:
@@ -96,15 +101,15 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
                 if number_of_processes == 1:
                     causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
                 else:
-                    temp_input.append((g_a, g_b, x_orig, y_orig, z_orig))
+                    tmp_input.append((g_a, g_b, x_orig, y_orig, z_orig))
 
     if number_of_processes > 1:
-        tmp_results = Pool(number_of_processes).map_async(pool_cmi, temp_input)
-        for t in tmp_results:
-            causal.net.loc[t[0], t[1]] = t[2]
+        tmp_results = Pool(number_of_processes).map(pool_cmi, [pos for pos in range(len(tmp_input))])
         pool.close()
         pool.join()
-
+        for t in tmp_results:
+            causal.net.loc[t[0], t[1]] = t[2]
+        
     adata.uns['causal_net'] = causal_net
 
 #     logg.info('     done', time = True, end = ' ' if settings.verbosity > 2 else '\n')
