@@ -5,6 +5,14 @@ from scipy.sparse import isspmatrix
 from .causal_network import cmi
 from multiprocessing import Pool
 
+def pool_cmi(pos):
+    gene_a = tmp_input[pos][0]
+    gene_b = tmp_input[pos][1]
+    x = tmp_input[pos][2]
+    y = tmp_input[pos][3]
+    z = tmp_input[pos][4]
+    return (gene_a, gene_b, cmi(x, y, z))
+
 def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1):
     """Infer causal networks with dynamics-coupled single cells measurements.
     Network inference is a insanely challenging problem which has a long history and that none of the existing algorithms work well.
@@ -73,15 +81,6 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
         velocity = (velocity - velocity.mean()) / (velocity.max() - velocity.min())
 
     causal_net = pd.DataFrame({node_id: [np.nan for i in genes] for node_id in genes}, index=genes)
-
-    def pool_cmi(pos):
-        gene_a = tmp_input[pos][0]
-        gene_b = tmp_input[pos][1]
-        x = tmp_input[pos][2]
-        y = tmp_input[pos][3]
-        z = tmp_input[pos][4]
-        return (gene_a, gene_b, cmi(x, y, z))
-
     tmp_input = []
 
     for g_a in genes:
@@ -101,10 +100,11 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
                 if number_of_processes == 1:
                     causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
                 else:
-                    tmp_input.append((g_a, g_b, x_orig, y_orig, z_orig))
+                    tmp_input.append([g_a, g_b, x_orig, y_orig, z_orig])
 
     if number_of_processes > 1:
-        tmp_results = Pool(number_of_processes).map(pool_cmi, [pos for pos in range(len(tmp_input))])
+        pool = Pool(number_of_processes)
+        tmp_results = pool.map(pool_cmi, [pos for pos in range(len(tmp_input))])
         pool.close()
         pool.join()
         for t in tmp_results:
@@ -117,4 +117,3 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
 #               '     matrix is added to adata.uns')
 
     return adata if copy else None
-
