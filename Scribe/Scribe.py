@@ -5,6 +5,7 @@ from scipy.sparse import isspmatrix
 from .causal_network import cmi
 from multiprocessing import Pool
 
+tmp_input = []
 def pool_cmi(pos):
     gene_a = tmp_input[pos][0]
     gene_b = tmp_input[pos][1]
@@ -81,7 +82,6 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
         velocity = (velocity - velocity.mean()) / (velocity.max() - velocity.min())
 
     causal_net = pd.DataFrame({node_id: [np.nan for i in genes] for node_id in genes}, index=genes)
-    tmp_input = []
 
     for g_a in genes:
         for g_b in genes:
