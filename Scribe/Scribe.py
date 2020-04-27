@@ -108,7 +108,7 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
         pool.close()
         pool.join()
         for t in tmp_results:
-            causal.net.loc[t[0], t[1]] = t[2]
+            causal_net.loc[t[0], t[1]] = t[2]
         
     adata.uns['causal_net'] = causal_net
 
