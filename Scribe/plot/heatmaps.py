@@ -598,6 +598,7 @@ def viz_comb_logic(adata, pairs_mat, log=False, delay=1, grid_num=25, n_row=None
         seaborn.rugplot(xy_subset['y'].values, height=0.025, axis='y', ax=axes[i, j], c="darkred")
 
     fig.colorbar(im, ax=axes)
+    plt.set_title("%s, %s -> %s" % (pairs_mat[0,0], pairs_mat[0,1], pairs_mat[0,2]))
     plt.show()
 
     if return_data:
