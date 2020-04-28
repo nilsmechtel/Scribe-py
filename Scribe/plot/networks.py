@@ -81,6 +81,10 @@ def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'g
 
 
 def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6)):
+
+    if 'causal_net' not in adata.uns.keys():
+        raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
+
     df_mat = adata.uns['causal_net']
     ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
 
