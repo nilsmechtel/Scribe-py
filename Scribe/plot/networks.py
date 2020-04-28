@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'gray', figsize=(6, 6)):
@@ -76,4 +77,39 @@ def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'g
         nx.draw_shell(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
     else:
         raise('layout', layout, ' is not supported.')
+    plt.show()
+
+
+def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6)):
+    df_mat = adata.uns['causal_net']
+    ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
+
+    tmp = np.where(df_mat.values - df_mat.T.values < 0)
+
+    for i in range(len(tmp[0])):
+        df_mat.iloc[tmp[0][i], tmp[1][i]] = np.nan
+
+    df_mat = df_mat.stack().reset_index()
+    df_mat.columns = ['source', 'target', 'weight']
+
+    adata.var['gene_name'] = adata.var_names.tolist()
+
+    df_mat.source = adata.var.loc[df_mat.source, 'gene_name'].tolist()
+    df_mat.target = adata.var.loc[df_mat.target, 'gene_name'].tolist()
+
+    df_mat = df_mat.iloc[~np.isinf(df_mat.weight.tolist()), :]
+
+    top_edges = df_mat.weight >= np.quantile(df_mat.weight, 1 - top_n_edges / len(df_mat))
+    df_mat = df_mat.loc[top_edges,]
+
+    G = nx.from_pandas_edgelist(df_mat, source='source', target='target', edge_attr='weight', create_using=nx.DiGraph())
+    G.nodes()
+    W = []
+    for n, nbrs in G.adj.items():
+        for nbr, eattr in nbrs.items():
+            W.append(eattr['weight'])
+
+    G.nodes()
+    plt.figure(figsize=figsize)
+    nx.draw(G, with_labels=True, node_color=node_color, node_size=100, edge_color=W, width=1.0, edge_cmap=plt.cm.Blues)
     plt.show()
