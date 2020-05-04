@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'gray', figsize=(6, 6)):
+def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'gray', figsize=(6, 6), save=None):
     """Visualize inferred causal regulatory network
 
     This plotting function visualize the inferred causal regulatory network inferred from Scribe.
@@ -77,10 +77,15 @@ def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'g
         nx.draw_shell(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
     else:
         raise('layout', layout, ' is not supported.')
+    if save is not None:
+        plt.savefig(save, dpi=None, facecolor='w', edgecolor='w',
+                    orientation='portrait', papertype=None, format='png',
+                    transparent=False, bbox_inches=None, pad_inches=0.1,
+                    frameon=None, metadata=None)
     plt.show()
 
 
-def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6)):
+def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6), save=None):
 
     if 'causal_net' not in adata.uns.keys():
         raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
@@ -116,4 +121,9 @@ def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6
     G.nodes()
     plt.figure(figsize=figsize)
     nx.draw(G, with_labels=True, node_color=node_color, node_size=100, edge_color=W, width=1.0, edge_cmap=plt.cm.Blues)
+    if save is not None:
+        plt.savefig(save, dpi=None, facecolor='w', edgecolor='w',
+                    orientation='portrait', papertype=None, format='png',
+                    transparent=False, bbox_inches=None, pad_inches=0.1,
+                    frameon=None, metadata=None)
     plt.show()
