@@ -14,7 +14,7 @@ def pool_cmi(pos):
     z = tmp_input[pos][4]
     return (gene_a, gene_b, cmi(x, y, z))
 
-def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1):
+def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1, regulator=None):
     """Infer causal networks with dynamics-coupled single cells measurements.
     Network inference is a insanely challenging problem which has a long history and that none of the existing algorithms work well.
     However, it's quite possible that one or more of the algorithms could work if only they were given enough data. Single-cell
@@ -86,6 +86,8 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
     for g_a in genes:
         for g_b in genes:
             if g_a == g_b:
+                continue
+            elif all([regulator is not None, g_a != regulator]):
                 continue
             else:
                 x_orig = spliced.loc[:, g_a].tolist()

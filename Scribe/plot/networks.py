@@ -2,8 +2,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
-def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'gray', figsize=(6, 6), save=None):
+def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'gray', figsize=(6, 6), mkdir=None, save=None):
     """Visualize inferred causal regulatory network
 
     This plotting function visualize the inferred causal regulatory network inferred from Scribe.
@@ -61,31 +62,44 @@ def vis_causal_net(adata, layout = 'circular', top_n_edges = 10, edge_color = 'g
     plt.figure(figsize=figsize)
     if layout is None:
         nx.draw(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "circular":
+    elif layout == "circular":
         nx.draw_circular(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "kamada_kawai":
+    elif layout == "kamada_kawai":
         nx.draw_kamada_kawai(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "planar":
+    elif layout == "planar":
         nx.draw_planar(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "random":
+    elif layout == "random":
         nx.draw_random(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "spectral":
+    elif layout == "spectral":
         nx.draw_spectral(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "spring":
+    elif layout == "spring":
         nx.draw_spring(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
-    elif layout is "shell":
+    elif layout == "shell":
         nx.draw_shell(G, with_labels=True, node_color='skyblue', node_size=100, edge_color=edge_color, width=W / np.max(W) * 5, edge_cmap=plt.cm.Blues, options = options)
     else:
         raise('layout', layout, ' is not supported.')
-    if save is not None:
-        plt.savefig(save, dpi=None, facecolor='w', edgecolor='w',
+
+    if mkdir is None:
+        path = os.getcwd()
+    else:
+        try:
+            os.mkdir(mkdir)
+        except OSError:
+            print('\n', "Creation of the directory %s failed" % mkdir)
+        else:
+            print('\n', "Successfully created the directory %s" % mkdir)
+        path = mkdir
+
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig("%s/%s" % (path,save), dpi=None, facecolor='w', edgecolor='w',
                     orientation='portrait', papertype=None, format='png',
                     transparent=False, bbox_inches=None, pad_inches=0.1,
-                    frameon=None, metadata=None)
-    plt.show()
+                    metadata=None)
 
 
-def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6), save=None):
+def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6), mkdir=None, save=None):
 
     if 'causal_net' not in adata.uns.keys():
         raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
@@ -121,9 +135,23 @@ def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6
     G.nodes()
     plt.figure(figsize=figsize)
     nx.draw(G, with_labels=True, node_color=node_color, node_size=100, edge_color=W, width=1.0, edge_cmap=plt.cm.Blues)
-    if save is not None:
-        plt.savefig(save, dpi=None, facecolor='w', edgecolor='w',
+
+    if mkdir is None:
+        path = os.getcwd()
+    else:
+        try:
+            os.mkdir(mkdir)
+        except OSError:
+            print('\n', "Creation of the directory %s failed" % mkdir)
+        else:
+            print('\n', "Successfully created the directory %s" % mkdir)
+        path = mkdir
+
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig("%s/%s" % (path,save), dpi=None, facecolor='w', edgecolor='w',
                     orientation='portrait', papertype=None, format='png',
                     transparent=False, bbox_inches=None, pad_inches=0.1,
-                    frameon=None, metadata=None)
-    plt.show()
+                    metadata=None)
+
