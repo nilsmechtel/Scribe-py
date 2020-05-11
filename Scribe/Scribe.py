@@ -14,7 +14,7 @@ def pool_cmi(pos):
     z = tmp_input[pos][4]
     return (gene_a, gene_b, cmi(x, y, z))
 
-def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1, regulator=None):
+def causal_net_dynamics_coupling(adata, regulator_genes=None, target_genes=None, guide_keys=None, t0_key='spliced', t1_key='velocity', normalize=True, copy=False, number_of_processes=1):
     """Infer causal networks with dynamics-coupled single cells measurements.
     Network inference is a insanely challenging problem which has a long history and that none of the existing algorithms work well.
     However, it's quite possible that one or more of the algorithms could work if only they were given enough data. Single-cell
@@ -35,8 +35,8 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
     ---------
     adata: `anndata`
         Annotated data matrix.
-    genes: `List`
-
+    regulator_genes: `List`
+    target_genes: `List`
     guide_keys: `List` (default: None)
         Whether to scale the expression or velocity values into 0 to 1 before calculating causal networks.
     t0_key: `str` (default: spliced)
@@ -55,8 +55,12 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
     An update AnnData object with inferred causal network stored as a matrix related to the key `causal_net` in the `uns` slot.
     """
 
-    if genes is None and guide_keys is None:
-        genes = adata.var_names.values.tolist()
+    if guide_keys is None:
+        if regulator_genes is None:
+            regulator_genes = adata.var_names.values.tolist()
+        if target_genes is None:
+            target_genes = adata.var_names.values.tolist()
+        genes = list(set(regulator_genes + target_genes))
 
     if guide_keys is not None:
         genes = np.unique(adata.obs[guide_keys].tolist())
@@ -65,6 +69,8 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
         idx_var = [vn in genes for vn in adata.var_names]
         idx_var = np.argwhere(idx_var)
         genes = adata.var_names.values[idx_var.flatten()].tolist() #[idx_var]
+        regulator_genes = genes
+        target_genes = genes
 
     # support sparse matrix:
     tmp = pd.DataFrame(adata.layers[t0_key].todense()) if isspmatrix(adata.layers[t0_key]) else pd.DataFrame(adata.layers[t0_key])
@@ -81,13 +87,11 @@ def causal_net_dynamics_coupling(adata, genes=None, guide_keys=None, t0_key='spl
         spliced = (spliced - spliced.mean()) / (spliced.max() - spliced.min())
         velocity = (velocity - velocity.mean()) / (velocity.max() - velocity.min())
 
-    causal_net = pd.DataFrame({node_id: [np.nan for i in genes] for node_id in genes}, index=genes)
+    causal_net = pd.DataFrame({node_id: [np.nan for i in regulator_genes] for node_id in taget_genes}, index=regulator_genes)
 
-    for g_a in genes:
-        for g_b in genes:
+    for g_a in regulator_genes:
+        for g_b in target_genes:
             if g_a == g_b:
-                continue
-            elif all([regulator is not None, g_a != regulator]):
                 continue
             else:
                 x_orig = spliced.loc[:, g_a].tolist()
