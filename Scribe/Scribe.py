@@ -55,12 +55,12 @@ def causal_net_dynamics_coupling(adata, regulator_genes=None, target_genes=None,
     An update AnnData object with inferred causal network stored as a matrix related to the key `causal_net` in the `uns` slot.
     """
 
-    if guide_keys is None:
-        if regulator_genes is None:
-            regulator_genes = adata.var_names.values.tolist()
-        if target_genes is None:
-            target_genes = adata.var_names.values.tolist()
-        genes = list(set(regulator_genes + target_genes))
+    if regulator_genes is None:
+        regulator_genes = adata.var_names.values.tolist()
+    if target_genes is None:
+        target_genes = adata.var_names.values.tolist()
+
+    genes = list(set(regulator_genes + target_genes))
 
     if guide_keys is not None:
         genes = np.unique(adata.obs[guide_keys].tolist())
@@ -87,7 +87,7 @@ def causal_net_dynamics_coupling(adata, regulator_genes=None, target_genes=None,
         spliced = (spliced - spliced.mean()) / (spliced.max() - spliced.min())
         velocity = (velocity - velocity.mean()) / (velocity.max() - velocity.min())
 
-    causal_net = pd.DataFrame({node_id: [np.nan for i in regulator_genes] for node_id in taget_genes}, index=regulator_genes)
+    causal_net = pd.DataFrame({node_id: [np.nan for i in regulator_genes] for node_id in target_genes}, index=regulator_genes)
 
     for g_a in regulator_genes:
         for g_b in target_genes:
@@ -104,9 +104,9 @@ def causal_net_dynamics_coupling(adata, regulator_genes=None, target_genes=None,
                 z_orig = [[i] for i in z_orig]
 
                 if number_of_processes == 1:
-                    causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
+                    causal_net.loc[g_a, g_b] = cmi(x_orig, z_orig, y_orig)
                 else:
-                    tmp_input.append([g_a, g_b, x_orig, y_orig, z_orig])
+                    tmp_input.append([g_a, g_b, x_orig, z_orig, y_orig])
 
     if number_of_processes > 1:
         pool = Pool(number_of_processes)
