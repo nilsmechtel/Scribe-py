@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from copy import deepcopy
 
 def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'circular', top_n_edges = 10,
                    edge_color = 'gray', node_color = 'skyblue', node_size = 100, figsize= (6, 6),
@@ -33,7 +34,7 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if 'causal_net' not in adata.uns.keys():
         raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
 
-    df_mat = adata.uns['causal_net']
+    df_mat = deepcopy(adata.uns['causal_net'])
     ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
 
     tmp = np.where(df_mat.values - df_mat.T.values < 0)
@@ -132,7 +133,7 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
 #    if 'causal_net' not in adata.uns.keys():
 #        raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
 #
-#    df_mat = adata.uns['causal_net']
+#    df_mat = deepcopy(adata.uns['causal_net'])
 #    ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
 #
 #    tmp = np.where(df_mat.values - df_mat.T.values < 0)
