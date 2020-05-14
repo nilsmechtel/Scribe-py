@@ -6,7 +6,7 @@ import os
 from copy import deepcopy
 
 def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'circular', top_n_edges = 10,
-                   edge_color = 'gray', node_color = 'skyblue', node_size = 100, figsize= (6, 6),
+                   edge_color = 'gray', width='weight', node_color = 'skyblue', node_size = 100, figsize= (6, 6),
                    path = None, save_to = None):
     """Visualize inferred causal regulatory network
 
@@ -35,25 +35,35 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
         raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
 
     df_mat = deepcopy(adata.uns['causal_net'])
-    ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
 
-    tmp = np.where(df_mat.values - df_mat.T.values < 0)
-
-    for i in range(len(tmp[0])):
-        df_mat.iloc[tmp[0][i], tmp[1][i]] = np.nan
+    if df_mat.shape[0] == df_mat.shape[1]:
+        tmp = np.where(df_mat.values - df_mat.T.values < 0)
+        for i in range(len(tmp[0])):
+            df_mat.iloc[tmp[0][i], tmp[1][i]] = np.nan
 
     df_mat = df_mat.stack().reset_index()
     df_mat.columns = ['source', 'target', 'weight']
 
+    all_genes = list(set(df_mat['source'].tolist() + df_mat['target'].tolist()))
+    def check_genes(input_list, s_t):
+        output_list = []
+        for gene in input_list:
+            if gene not in all_genes:
+                print('\n', '%s has been removed from %s genes.' % (gene, s_t))
+            else:
+                output_list.append(gene)
+        return output_list
+
     if source_genes is not None:
+        source_genes = check_genes(source_genes, 'source')
         df_mat = df_mat[[gene in source_genes for gene in df_mat['source']]]
 
     if target_genes is not None:
+        target_genes = check_genes(target_genes, 'target')
         df_mat = df_mat[[gene in target_genes for gene in df_mat['target']]]
 
-    if top_n_edges is not None:
-        ind_vec = np.argsort(-df_mat.loc[:, 'weight'])
-        df_mat = df_mat.loc[ind_vec[:top_n_edges], :]
+    if top_n_edges is not None and top_n_edges < len(df_mat):
+        df_mat = df_mat.sort_values(by='weight', ascending=False)[:top_n_edges]
 
     source_genes = df_mat['source'].tolist()
     target_genes = df_mat['target'].tolist()
@@ -95,7 +105,7 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if edge_color == 'weight':
         edge_color = W
 
-    if width == 'weight'
+    if width == 'weight':
         width = W / np.max(W) * 5
 
     plt.figure(figsize=figsize)
@@ -110,18 +120,18 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if path is None:
         path = os.getcwd()
     else:
-        if not os.isdir(path)
+        if not os.path.isdir(path):
             try:
-                os.mkdir(mkdir)
+                os.mkdir(path)
             except OSError:
                 print('\n', "Creation of the directory %s failed" % path)
             else:
                 print('\n', "Successfully created the directory %s" % path)
 
-    if save is None:
+    if save_to is None:
         plt.show()
     else:
-        plt.savefig("%s/%s" % (path,save), dpi=None, facecolor='w', edgecolor='w',
+        plt.savefig("%s/%s" % (path,save_to), dpi=None, facecolor='w', edgecolor='w',
                     orientation='portrait', papertype=None, format='png',
                     transparent=False, bbox_inches=None, pad_inches=0.1,
                     metadata=None)
@@ -182,4 +192,5 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
 #        plt.savefig("%s/%s" % (path,save), dpi=None, facecolor='w', edgecolor='w',
 #                    orientation='portrait', papertype=None, format='png',
 #                    transparent=False, bbox_inches=None, pad_inches=0.1,
-#                    metadata=None)
+#                    metadata=None
+
