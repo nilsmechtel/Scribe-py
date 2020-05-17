@@ -120,13 +120,18 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if path is None:
         path = os.getcwd()
     else:
-        if not os.path.isdir(path):
-            try:
-                os.mkdir(path)
-            except OSError:
-                print('\n', "Creation of the directory %s failed" % path)
-            else:
-                print('\n', "Successfully created the directory %s" % path)
+        tmp_path = ''
+        splitted_path = path.split('/')
+        for i, folder in enumerate(splitted_path):
+            if i == 0: continue 
+            tmp_path += '/%s' % splitted_path[i]
+            if not os.path.isdir(tmp_path):
+                try:
+                    os.mkdir(tmp_path)
+                except OSError:
+                    print('\n', "Creation of the directory %s failed" % tmp_path)
+                else:
+                    print('\n', "Successfully created the directory %s" % tmp_path)
 
     if save_to is None:
         plt.show()
@@ -137,60 +142,4 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
                     metadata=None)
 
     return source_genes, target_genes, pos
-
-
-#def vis_causal_net2(adata, top_n_edges = 10, node_color='skyblue', figsize=(6, 6), mkdir=None, save=None):
-#    if 'causal_net' not in adata.uns.keys():
-#        raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
-#
-#    df_mat = deepcopy(adata.uns['causal_net'])
-#    ind_mat = np.where(df_mat.values - df_mat.T.values < 0)
-#
-#    tmp = np.where(df_mat.values - df_mat.T.values < 0)
-#
-#    for i in range(len(tmp[0])):
-#        df_mat.iloc[tmp[0][i], tmp[1][i]] = np.nan
-#
-#    df_mat = df_mat.stack().reset_index()
-#    df_mat.columns = ['source', 'target', 'weight']
-#
-#    adata.var['gene_name'] = adata.var_names.tolist()
-#
-#    df_mat.source = adata.var.loc[df_mat.source, 'gene_name'].tolist()
-#    df_mat.target = adata.var.loc[df_mat.target, 'gene_name'].tolist()
-#
-#    df_mat = df_mat.iloc[~np.isinf(df_mat.weight.tolist()), :]
-#
-#    top_edges = df_mat.weight >= np.quantile(df_mat.weight, 1 - top_n_edges / len(df_mat))
-#    df_mat = df_mat.loc[top_edges,]
-#
-#    G = nx.from_pandas_edgelist(df_mat, source='source', target='target', edge_attr='weight', create_using=nx.DiGraph())
-#    G.nodes()
-#    W = []
-#    for n, nbrs in G.adj.items():
-#        for nbr, eattr in nbrs.items():
-#            W.append(eattr['weight'])
-#
-#    G.nodes()
-#    plt.figure(figsize=figsize)
-#    nx.draw(G, with_labels=True, node_color=node_color, node_size=100, edge_color=W, width=1.0, edge_cmap=plt.cm.Blues)
-#
-#    if mkdir is None:
-#        path = os.getcwd()
-#    else:
-#        try:
-#            os.mkdir(mkdir)
-#        except OSError:
-#            print('\n', "Creation of the directory %s failed" % mkdir)
-#        else:
-#            print('\n', "Successfully created the directory %s" % mkdir)
-#        path = mkdir
-#
-#    if save is None:
-#        plt.show()
-#    else:
-#        plt.savefig("%s/%s" % (path,save), dpi=None, facecolor='w', edgecolor='w',
-#                    orientation='portrait', papertype=None, format='png',
-#                    transparent=False, bbox_inches=None, pad_inches=0.1,
-#                    metadata=None
 

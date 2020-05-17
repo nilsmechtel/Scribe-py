@@ -104,9 +104,9 @@ def causal_net_dynamics_coupling(adata, regulator_genes=None, target_genes=None,
                 z_orig = [[i] for i in z_orig]
 
                 if number_of_processes == 1:
-                    causal_net.loc[g_a, g_b] = cmi(x_orig, z_orig, y_orig)
+                    causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
                 else:
-                    tmp_input.append([g_a, g_b, x_orig, z_orig, y_orig])
+                    tmp_input.append([g_a, g_b, x_orig, y_orig, z_orig])
 
     if number_of_processes > 1:
         pool = Pool(number_of_processes)
