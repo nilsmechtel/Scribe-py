@@ -6,8 +6,8 @@ import os
 from copy import deepcopy
 
 def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'circular', top_n_edges = 10,
-                   edge_color = 'gray', width='weight', node_color = 'skyblue', node_size = 100, figsize= (6, 6),
-                   path = None, save_to = None):
+                   edge_color = 'gray', width='weight', max_W = None, node_color = 'skyblue', node_size = 100, figsize = (6, 6),
+                   path = None, save_to = None, show = True, fig = None, ax = None):
     """Visualize inferred causal regulatory network
 
     This plotting function visualize the inferred causal regulatory network inferred from Scribe.
@@ -32,7 +32,7 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     """
 
     if 'causal_net' not in adata.uns.keys():
-        raise('causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
+        raise('Causal_net is not a key in uns slot. Please first run causal network inference with Scribe.')
 
     df_mat = deepcopy(adata.uns['causal_net'])
 
@@ -105,41 +105,48 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if edge_color == 'weight':
         edge_color = W
 
-    if width == 'weight':
-        width = W / np.max(W) * 5
+    if max_W is None:
+        max_W = np.max(W)
 
-    plt.figure(figsize=figsize)
-    nx.draw(G,
+    if width == 'weight':
+        width = W / max_W * 5
+
+    if fig is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    
+    nx.draw(G, ax=ax,
             pos=pos,
             with_labels=True,
             node_color=node_color, node_size=node_size,
             edge_color=edge_color, width=width,
             edge_cmap=plt.cm.Blues,
-            options = options)
+            options = options) 
 
-    if path is None:
-        path = os.getcwd()
-    else:
-        tmp_path = ''
-        splitted_path = path.split('/')
-        for i, folder in enumerate(splitted_path):
-            if i == 0: continue 
-            tmp_path += '/%s' % splitted_path[i]
-            if not os.path.isdir(tmp_path):
-                try:
-                    os.mkdir(tmp_path)
-                except OSError:
-                    print('\n', "Creation of the directory %s failed" % tmp_path)
-                else:
-                    print('\n', "Successfully created the directory %s" % tmp_path)
+    if save_to is not None:
+        if path is None:
+            path = os.getcwd()
+        else:
+            tmp_path = ''
+            splitted_path = path.split('/')
+            for i, folder in enumerate(splitted_path):
+                if i == 0: continue
+                tmp_path += '/%s' % splitted_path[i]
+                if not os.path.isdir(tmp_path):
+                    try:
+                        os.mkdir(tmp_path)
+                    except OSError:
+                        print('\n', "Creation of the directory %s failed" % tmp_path)
+                    else:
+                        print('\n', "Successfully created the directory %s" % tmp_path)
 
-    if save_to is None:
-        plt.show()
-    else:
+        plt.ioff()
         plt.savefig("%s/%s" % (path,save_to), dpi=None, facecolor='w', edgecolor='w',
                     orientation='portrait', papertype=None, format='png',
                     transparent=False, bbox_inches=None, pad_inches=0.1,
                     metadata=None)
+    
+    if show is True:
+        plt.show()
 
-    return source_genes, target_genes, pos
+    return (source_genes, target_genes, pos, max_W, fig)
 
