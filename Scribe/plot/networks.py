@@ -6,8 +6,8 @@ import os
 from copy import deepcopy
 
 def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'circular', top_n_edges = 10,
-                   edge_color = 'gray', width='weight', max_W = None, node_color = 'skyblue', node_size = 100, figsize = (6, 6),
-                   path = None, save_to = None, show = True, fig = None, ax = None):
+                   edge_color = 'gray', width='weight', min_W = None, max_W = None, node_color = 'skyblue', node_size = 100, figsize = (6, 6),
+                   save_to = None, show = True, fig = None, ax = None, face_color='w'):
     """Visualize inferred causal regulatory network
 
     This plotting function visualize the inferred causal regulatory network inferred from Scribe.
@@ -102,24 +102,27 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     else:
         raise('Layout', layout, ' is not supported.')
 
-    if edge_color == 'weight':
-        edge_color = W
+    if min_W is None:
+        min_W = np.min(W)
 
     if max_W is None:
         max_W = np.max(W)
 
+    if edge_color == 'weight':
+        edge_color = W 
+
     if width == 'weight':
-        width = W / max_W * 5
+        width = W / max_W * 8
 
     if fig is None:
         fig, ax = plt.subplots(figsize=figsize)
-    
+     
     nx.draw(G, ax=ax,
             pos=pos,
             with_labels=True,
             node_color=node_color, node_size=node_size,
             edge_color=edge_color, width=width,
-            edge_cmap=plt.cm.Blues,
+            edge_cmap=plt.cm.Blues, edge_vmin=min_W, edge_vmax=max_W, 
             options = options) 
 
     if save_to is not None:
@@ -140,7 +143,7 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
                         print('\n', "Successfully created the directory %s" % tmp_path)
 
         plt.ioff()
-        plt.savefig("%s/%s" % (path,save_to), dpi=None, facecolor='w', edgecolor='w',
+        plt.savefig(save_to, dpi=None, facecolor=face_color, edgecolor=face_color,
                     orientation='portrait', papertype=None, format='png',
                     transparent=False, bbox_inches=None, pad_inches=0.1,
                     metadata=None)
@@ -148,5 +151,5 @@ def vis_causal_net(adata, source_genes = None, target_genes = None, layout = 'ci
     if show is True:
         plt.show()
 
-    return (source_genes, target_genes, pos, max_W, fig)
+    return (source_genes, target_genes, pos, (min_W,max_W), fig)
 
