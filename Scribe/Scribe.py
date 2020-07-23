@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from scipy.sparse import isspmatrix
@@ -26,8 +27,8 @@ def causal_net_dynamics_coupling(adata,
                                  normalize=True,
                                  drop_zero_cells=True,
                                  copy=False,
-                                 number_of_processes=1):
-"""Infer causal networks with dynamics-coupled single cells measurements.
+                                 n_processes=1):
+    """Infer causal networks with dynamics-coupled single cells measurements.
     Network inference is a insanely challenging problem which has a long history and that none of the existing algorithms work well.
     However, it's quite possible that one or more of the algorithms could work if only they were given enough data. Single-cell
     RNA-seq is exciting because it provides a ton of data. Somewhat surprisingly, just having a lot of single-cell RNA-seq data
@@ -113,35 +114,55 @@ def causal_net_dynamics_coupling(adata,
         spliced = (spliced - spliced.mean()) / (spliced.max() - spliced.min())
         velocity = (velocity - velocity.mean()) / (velocity.max() - velocity.min())
 
-    #causal_net = pd.DataFrame({node_id: [np.nan for i in regulator_genes] for node_id in target_genes}, index=regulator_genes)
-    causal_net = pd.DataFrame(columns=target_genes, index=regulator_genes)
+    causal_net = pd.DataFrame(columns=Targets, index=TFs)
 
-    for g_a in regulator_genes:
-        for g_b in target_genes:
+    if drop_zero_cells:
+        zero_genes = []
+        stats = np.array([])
+
+     #tqdm prints out the calculation progress; turn off for cluster calculation
+#    for g_a in tqdm(TFs, desc=f"Calculate causality score (RDI) from each TF to potential target:")
+
+    for g_a in TFs:
+        for g_b in Targets:
             if g_a == g_b:
                 continue
             else:
                 x_orig = spliced.loc[:, g_a]
-                y_orig = (spliced.loc[:, g_b] + velocity.loc[:, g_b]) if t1_key is 'velocity' else velocity.loc[:, g_b]
+                y_orig = (spliced.loc[:, g_b] + velocity.loc[:, g_b]) if t1_key == 'velocity' else velocity.loc[:, g_b]
                 z_orig = spliced.loc[:, g_b]
 
                 if drop_zero_cells:
                     xyz_orig = x_orig + y_orig + z_orig
                     x_orig, y_orig, z_orig = x_orig[xyz_orig > 0].tolist(), y_orig[xyz_orig > 0].tolist(), \
                                              z_orig[xyz_orig > 0].tolist()
+                    if len(x_orig) == 0:
+                        zero_genes.append((g_a,g_b))
+                        continue
+                    else:
+                        stats = np.append(stats, len(x_orig))
 
                 # input to cmi is a list of list
                 x_orig = [[i] for i in x_orig]
                 y_orig = [[i] for i in y_orig]
                 z_orig = [[i] for i in z_orig]
 
-                if number_of_processes == 1:
+                if n_processes == 1:
                     causal_net.loc[g_a, g_b] = cmi(x_orig, y_orig, z_orig)
                 else:
                     tmp_input.append([g_a, g_b, x_orig, y_orig, z_orig])
 
-    if number_of_processes > 1:
-        pool = Pool(number_of_processes)
+    if drop_zero_cells:
+        if len(zero_genes) > 0:
+            if len(zero_genes) == 1: print("There was %s combination with only zero cells.\n" % len(zero_genes)) # , zero_genes
+            else: print("There were %s combinations with only zero cells.\n" % len(zero_genes)) # , zero_genes
+        if len(stats) > 0:
+            print('Number of processed cells:\nMin: %s\nMax: %s\nMean: %s\nMedian: %s' % (np.min(stats), np.max(stats), np.mean(stats), np.median(stats))) 
+        else:
+            print('No genes processed.')
+
+    if n_processes > 1:
+        pool = Pool(n_processes)
         tmp_results = pool.map(pool_cmi, [pos for pos in range(len(tmp_input))])
         pool.close()
         pool.join()
